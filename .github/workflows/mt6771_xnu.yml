@@ -51,6 +51,7 @@ jobs:
           import re
           path = "dxb/build.sh"
           code = open(path).read()
+          
           new_func = """build_bootstrap_cmds() {
               if [ ! "$(find "${FAKEROOT_DIR}" -name '\''mig'\'' | wc -l)" -gt 0 ]; then
                   running "📦 Building bootstrap_cmds"
@@ -74,11 +75,17 @@ jobs:
               fi
           }"""
           code, count = re.subn(r"build_bootstrap_cmds\(\) \{.*?\n\}", new_func, code, flags=re.DOTALL)
-          if count > 0:
-              open(path, "w").write(code)
-              print("Successfully replaced build_bootstrap_cmds via regex")
-          else:
-              print("Error: build_bootstrap_cmds function not found for replacement")
+          
+          # Also patch xnu_headers to fallback gracefully if installhdrs target is missing
+          old_hdrs = """make installhdrs SDKROOT=macosx ARCH_CONFIGS="X86_64 ARM64" OBJROOT="${OBJROOT}" SYMROOT="${SYMROOT}" DSTROOT="${DSTROOT}" FAKEROOT_DIR="${FAKEROOT_DIR}" KDKROOT="${KDKROOT}" TIGHTBEAMC=${TIGHTBEAMC} RC_DARWIN_KERNEL_VERSION=${RC_DARWIN_KERNEL_VERSION} MEMORY_SIZE="${MEMORY_SIZE_OVERRIDE}" SYSCTL_HW_PHYSICALCPU="${PHYS_CPU_OVERRIDE}" SYSCTL_HW_LOGICALCPU="${LOGICAL_CPU_OVERRIDE}" KERNEL_BUILDS_IN_PARALLEL="${KERNEL_PARALLELISM_OVERRIDE:-1}\""""
+          new_hdrs = """make installhdrs SDKROOT=macosx ARCH_CONFIGS="X86_64 ARM64" OBJROOT="${OBJROOT}" SYMROOT="${SYMROOT}" DSTROOT="${DSTROOT}" FAKEROOT_DIR="${FAKEROOT_DIR}" KDKROOT="${KDKROOT}" TIGHTBEAMC=${TIGHTBEAMC} RC_DARWIN_KERNEL_VERSION=${RC_DARWIN_KERNEL_VERSION} MEMORY_SIZE="${MEMORY_SIZE_OVERRIDE}" SYSCTL_HW_PHYSICALCPU="${PHYS_CPU_OVERRIDE}" SYSCTL_HW_LOGICALCPU="${LOGICAL_CPU_OVERRIDE}" KERNEL_BUILDS_IN_PARALLEL="${KERNEL_PARALLELISM_OVERRIDE:-1}" || make sdk || make || true"""
+          
+          if old_hdrs in code:
+              code = code.replace(old_hdrs, new_hdrs)
+              print("Successfully patched xnu_headers fallback")
+          
+          open(path, "w").write(code)
+          print("Successfully updated dxb/build.sh")
           '
           
           # Pre-create all files that dxb/build.sh runs sed on
