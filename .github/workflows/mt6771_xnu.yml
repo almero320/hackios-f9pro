@@ -46,32 +46,39 @@ jobs:
           git -C dxb checkout -q FETCH_HEAD
           sed -i '' 's/ARCHS="x86_64 arm64e" VALID_ARCHS="x86_64 arm64e"/ARCHS="x86_64 arm64e arm64" VALID_ARCHS="x86_64 arm64e arm64"/' dxb/build.sh || true
           
-          # Patch build_bootstrap_cmds in dxb/build.sh to support modern bootstrap_cmds without mig.xcodeproj
+          # Replace build_bootstrap_cmds function in dxb/build.sh using python regex
           python3 -c '
+          import re
           path = "dxb/build.sh"
           code = open(path).read()
-          old_block = """        cd "${SRCROOT}"
-          env LD="$(xcrun -find clang)" LDPLUSPLUS="$(xcrun -find clang++)" \\
-              xcodebuild install -sdk macosx -project mig.xcodeproj ARCHS="arm64 x86_64" CODE_SIGN_IDENTITY="-" OBJROOT="${OBJROOT}" SYMROOT="${SYMROOT}" DSTROOT="${DSTROOT}" RC_ProjectNameAndSourceVersion="${CLONED_BOOTSTRAP_VERSION}"
-          cd "${WORK_DIR}\""""
-          
-          new_block = """        cd "${SRCROOT}"
-          if [ -f mig.xcodeproj ]; then
-              env LD="$(xcrun -find clang)" LDPLUSPLUS="$(xcrun -find clang++)" \\
-                  xcodebuild install -sdk macosx -project mig.xcodeproj ARCHS="arm64 x86_64" CODE_SIGN_IDENTITY="-" OBJROOT="${OBJROOT}" SYMROOT="${SYMROOT}" DSTROOT="${DSTROOT}" RC_ProjectNameAndSourceVersion="${CLONED_BOOTSTRAP_VERSION}"
-          else
-              make -C mig || make || true
-              mkdir -p "${DSTROOT}/usr/local/bin"
-              find . -name "mig" -exec cp {} "${DSTROOT}/usr/local/bin/" \\; || true
-          fi
-          cd "${WORK_DIR}\""""
-          
-          if "mig.xcodeproj" in code:
-              code = code.replace(old_block.strip(), new_block.strip())
+          new_func = """build_bootstrap_cmds() {
+              if [ ! "$(find "${FAKEROOT_DIR}" -name '\''mig'\'' | wc -l)" -gt 0 ]; then
+                  running "📦 Building bootstrap_cmds"
+                  if [ ! -d "${WORK_DIR}/bootstrap_cmds" ]; then
+                      BOOTSTRAP_VERSION=$(curl -s $RELEASE_URL | jq -r \x27.projects[] | select(.project=="bootstrap_cmds") | .tag\x27)
+                      git clone --branch "${BOOTSTRAP_VERSION}" https://github.com/apple-oss-distributions/bootstrap_cmds.git "${WORK_DIR}/bootstrap_cmds"
+                  fi
+                  SRCROOT="${WORK_DIR}/bootstrap_cmds"
+                  OBJROOT="${BUILD_DIR}/bootstrap_cmds.obj"
+                  SYMROOT="${BUILD_DIR}/bootstrap_cmds.sym"
+                  mkdir -p "${DSTROOT}/usr/local/bin"
+                  cd "${SRCROOT}"
+                  if [ -f mig.xcodeproj ]; then
+                      env LD="$(xcrun -find clang)" LDPLUSPLUS="$(xcrun -find clang++)" \\
+                          xcodebuild install -sdk macosx -project mig.xcodeproj ARCHS="arm64 x86_64" CODE_SIGN_IDENTITY="-" OBJROOT="${OBJROOT}" SYMROOT="${SYMROOT}" DSTROOT="${DSTROOT}" RC_ProjectNameAndSourceVersion="6639065"
+                  else
+                      make -C mig || make || true
+                      find . -name "mig" -exec cp {} "${DSTROOT}/usr/local/bin/" \\; || true
+                  fi
+                  cd "${WORK_DIR}"
+              fi
+          }"""
+          code, count = re.subn(r"build_bootstrap_cmds\(\) \{.*?\n\}", new_func, code, flags=re.DOTALL)
+          if count > 0:
               open(path, "w").write(code)
-              print("Successfully patched build_bootstrap_cmds in dxb/build.sh")
+              print("Successfully replaced build_bootstrap_cmds via regex")
           else:
-              print("Warning: mig.xcodeproj block not found exactly")
+              print("Error: build_bootstrap_cmds function not found for replacement")
           '
           
           # Pre-create all files that dxb/build.sh runs sed on
