@@ -1,0 +1,11 @@
+diff --git a/bsd/dev/mt6771_hid.c b/bsd/dev/mt6771_hid.c
+new file mode 100644
+--- /dev/null
++++ b/bsd/dev/mt6771_hid.c
+@@ -0,0 +1,7 @@
++/*
++ * MediaTek MT6771 Touch & Button HID Service Stubs
++ */
++#define MT6771_I2C_BASE 0x11007000UL
++extern "C" void mt6771_hid_init(void) {
++}

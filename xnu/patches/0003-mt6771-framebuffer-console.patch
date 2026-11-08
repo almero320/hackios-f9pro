@@ -1,0 +1,10 @@
+diff --git a/osfmk/kern/debug.c b/osfmk/kern/debug.c
+--- a/osfmk/kern/debug.c
++++ b/osfmk/kern/debug.c
+@@ -100,2 +100,5 @@
+ #if defined(SWEET)
+ extern void sweet_early_putc(char c);
+ #endif
++#if defined(MT6771)
++extern void mt6771_early_putc(char c);
++#endif

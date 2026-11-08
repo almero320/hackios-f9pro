@@ -1,0 +1,7 @@
+diff --git a/osfmk/arm64/sleh.c b/osfmk/arm64/sleh.c
+--- a/osfmk/arm64/sleh.c
++++ b/osfmk/arm64/sleh.c
+@@ -32,2 +32,3 @@
+ #include <arm/thread.h>
+ #include <arm/rtclock.h>
++#include <arm/machine_cpu.h>

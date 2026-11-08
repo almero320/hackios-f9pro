@@ -1,0 +1,13 @@
+diff --git a/iokit/Kernel/arm/AppleCLCD_MT6771.cpp b/iokit/Kernel/arm/AppleCLCD_MT6771.cpp
+new file mode 100644
+--- /dev/null
++++ b/iokit/Kernel/arm/AppleCLCD_MT6771.cpp
+@@ -0,0 +1,10 @@
++/*
++ * MediaTek MT6771 AppleCLCD Display Service stub
++ */
++#define MT6771_FB_BASE  0x773b0000UL
++#define MT6771_FB_WIDTH 1080
++#define MT6771_FB_HEIGHT 2340
++extern "C" void mt6771_fb_init(void) {
++}

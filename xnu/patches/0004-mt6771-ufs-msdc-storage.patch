@@ -1,0 +1,14 @@
+diff --git a/bsd/dev/mt6771_msdc.c b/bsd/dev/mt6771_msdc.c
+new file mode 100644
+--- /dev/null
++++ b/bsd/dev/mt6771_msdc.c
+@@ -0,0 +1,10 @@
++/*
++ * MediaTek MSDC eMMC Host Controller Driver stub for OPPO F9 Pro (MT6771)
++ */
++#include <sys/types.h>
++
++#define MT6771_MSDC_BASE 0x11230000UL
++int mt6771_msdc_init(void) {
++    return 0;
++}

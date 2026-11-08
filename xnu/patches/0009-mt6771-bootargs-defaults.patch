@@ -1,0 +1,9 @@
+diff --git a/osfmk/kern/startup.c b/osfmk/kern/startup.c
+--- a/osfmk/kern/startup.c
++++ b/osfmk/kern/startup.c
+@@ -200,2 +200,5 @@
+ #if defined(SWEET)
+ #endif
++#if defined(MT6771)
++    // Default MT6771 bootargs
++#endif
