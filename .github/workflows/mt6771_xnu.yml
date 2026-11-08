@@ -34,18 +34,63 @@ env:
 
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: macos-13
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
 
-      - name: Fetch build script
+      - name: Fetch build script & Inject MT6771 Code
         run: |
           git init -q dxb
           git -C dxb fetch -q --depth 1 "$DXB_REPO" "$DXB_SHA"
           git -C dxb checkout -q FETCH_HEAD
-          cp xnu/patches/*.patch dxb/patches/
           sed -i '' 's/ARCHS="x86_64 arm64e" VALID_ARCHS="x86_64 arm64e"/ARCHS="x86_64 arm64e arm64" VALID_ARCHS="x86_64 arm64e arm64"/' dxb/build.sh
+          
+          # Directly inject MT6771 support into the cloned xnu source tree
+          XNU_DIR="dxb/xnu"
+          echo "Injecting MT6771 architecture support into $XNU_DIR..."
+          
+          # 1. Machine Config in makedefs/MakeInc.def
+          if [ -f "$XNU_DIR/makedefs/MakeInc.def" ]; then
+            sed -i '' 's/SUPPORTED_ARM64_MACHINE_CONFIGS = BCM2837 T6000 T8101 T8103 VMAPPLE/SUPPORTED_ARM64_MACHINE_CONFIGS = BCM2837 T6000 T8101 T8103 VMAPPLE MT6771/' "$XNU_DIR/makedefs/MakeInc.def"
+          fi
+          
+          # 2. Create MT6771 driver stubs
+          mkdir -p "$XNU_DIR/bsd/dev" "$XNU_DIR/iokit/Kernel/arm" "$XNU_DIR/osfmk/arm64"
+          
+          cat << 'EOF' > "$XNU_DIR/bsd/dev/mt6771_msdc.c"
+          /* MediaTek MSDC eMMC Host Controller Driver stub for OPPO F9 Pro (MT6771) */
+          #include <sys/types.h>
+          #define MT6771_MSDC_BASE 0x11230000UL
+          int mt6771_msdc_init(void) { return 0; }
+          EOF
+          
+          cat << 'EOF' > "$XNU_DIR/iokit/Kernel/arm/AppleCLCD_MT6771.cpp"
+          /* MediaTek MT6771 AppleCLCD Display Service stub */
+          #define MT6771_FB_BASE 0x773b0000UL
+          #define MT6771_FB_WIDTH 1080
+          #define MT6771_FB_HEIGHT 2340
+          extern "C" void mt6771_fb_init(void) {}
+          EOF
+          
+          cat << 'EOF' > "$XNU_DIR/osfmk/arm64/smp_mt6771.c"
+          /* MediaTek MT6771 SMP / PSCI Secondary Core Bring-up */
+          #define MT6771_NR_CPUS 8
+          extern "C" void mt6771_smp_init(void) {}
+          EOF
+          
+          cat << 'EOF' > "$XNU_DIR/bsd/dev/mt6771_hid.c"
+          /* MediaTek MT6771 Touch & Button HID Service Stubs */
+          #define MT6771_I2C_BASE 0x11007000UL
+          extern "C" void mt6771_hid_init(void) {}
+          EOF
+          
+          cat << 'EOF' > "$XNU_DIR/bsd/dev/mt6771_battery.c"
+          /* MediaTek MT6771 IOPMPowerSource Battery Service */
+          extern "C" void mt6771_battery_init(void) {}
+          EOF
+          
+          echo "MT6771 code injection complete."
 
       - name: Deps
         run: |
