@@ -46,28 +46,20 @@ jobs:
           git -C dxb checkout -q FETCH_HEAD
           sed -i '' 's/ARCHS="x86_64 arm64e" VALID_ARCHS="x86_64 arm64e"/ARCHS="x86_64 arm64e arm64" VALID_ARCHS="x86_64 arm64e arm64"/' dxb/build.sh || true
           
-          # Fix make_symbol_aliasing.sh missing in xnu-8796 (13.5)
-          python3 -c '
-          path = "dxb/build.sh"
-          code = open(path).read()
-          old = "sed -i '\''\'\x27\'' \x27s|^AVAILABILITY_PL=\"${SDKROOT}/${DRIVERKITROOT}|AVAILABILITY_PL=\"${FAKEROOT_DIR}|g\x27 \"${WORK_DIR}/xnu/bsd/sys/make_symbol_aliasing.sh\""
-          new = "if [ -f \"${WORK_DIR}/xnu/bsd/sys/make_symbol_aliasing.sh\" ]; then sed -i '\''\'\x27\'' \x27s|^AVAILABILITY_PL=\"${SDKROOT}/${DRIVERKITROOT}|AVAILABILITY_PL=\"${FAKEROOT_DIR}|g\x27 \"${WORK_DIR}/xnu/bsd/sys/make_symbol_aliasing.sh\"; fi"
-          if old in code:
-              code = code.replace(old, new)
-              open(path, "w").write(code)
-              print("Successfully patched make_symbol_aliasing.sh check in dxb/build.sh")
-          else:
-              print("Warning: make_symbol_aliasing pattern not found exactly")
-          '
-          
           # Directly inject MT6771 support into the cloned xnu source tree
           XNU_DIR="dxb/xnu"
           echo "Injecting MT6771 architecture support into $XNU_DIR..."
           
+          # 1. Machine Config in makedefs/MakeInc.def
           if [ -f "$XNU_DIR/makedefs/MakeInc.def" ]; then
             sed -i '' 's/SUPPORTED_ARM64_MACHINE_CONFIGS = BCM2837 T6000 T8101 T8103 VMAPPLE/SUPPORTED_ARM64_MACHINE_CONFIGS = BCM2837 T6000 T8101 T8103 VMAPPLE MT6771/' "$XNU_DIR/makedefs/MakeInc.def" || true
           fi
           
+          # Ensure make_symbol_aliasing.sh exists to satisfy dxb/build.sh sed command
+          mkdir -p "$XNU_DIR/bsd/sys"
+          touch "$XNU_DIR/bsd/sys/make_symbol_aliasing.sh"
+          
+          # 2. Create MT6771 driver stubs
           mkdir -p "$XNU_DIR/bsd/dev" "$XNU_DIR/iokit/Kernel/arm" "$XNU_DIR/osfmk/arm64"
           
           cat << 'EOF' > "$XNU_DIR/bsd/dev/mt6771_msdc.c"
