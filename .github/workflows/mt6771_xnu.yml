@@ -46,7 +46,35 @@ jobs:
           git -C dxb checkout -q FETCH_HEAD
           sed -i '' 's/ARCHS="x86_64 arm64e" VALID_ARCHS="x86_64 arm64e"/ARCHS="x86_64 arm64e arm64" VALID_ARCHS="x86_64 arm64e arm64"/' dxb/build.sh || true
           
-          # Pre-create all files that dxb/build.sh runs sed on to prevent "No such file or directory" errors in xnu-8796
+          # Patch build_bootstrap_cmds in dxb/build.sh to support modern bootstrap_cmds without mig.xcodeproj
+          python3 -c '
+          path = "dxb/build.sh"
+          code = open(path).read()
+          old_block = """        cd "${SRCROOT}"
+          env LD="$(xcrun -find clang)" LDPLUSPLUS="$(xcrun -find clang++)" \\
+              xcodebuild install -sdk macosx -project mig.xcodeproj ARCHS="arm64 x86_64" CODE_SIGN_IDENTITY="-" OBJROOT="${OBJROOT}" SYMROOT="${SYMROOT}" DSTROOT="${DSTROOT}" RC_ProjectNameAndSourceVersion="${CLONED_BOOTSTRAP_VERSION}"
+          cd "${WORK_DIR}\""""
+          
+          new_block = """        cd "${SRCROOT}"
+          if [ -f mig.xcodeproj ]; then
+              env LD="$(xcrun -find clang)" LDPLUSPLUS="$(xcrun -find clang++)" \\
+                  xcodebuild install -sdk macosx -project mig.xcodeproj ARCHS="arm64 x86_64" CODE_SIGN_IDENTITY="-" OBJROOT="${OBJROOT}" SYMROOT="${SYMROOT}" DSTROOT="${DSTROOT}" RC_ProjectNameAndSourceVersion="${CLONED_BOOTSTRAP_VERSION}"
+          else
+              make -C mig || make || true
+              mkdir -p "${DSTROOT}/usr/local/bin"
+              find . -name "mig" -exec cp {} "${DSTROOT}/usr/local/bin/" \\; || true
+          fi
+          cd "${WORK_DIR}\""""
+          
+          if "mig.xcodeproj" in code:
+              code = code.replace(old_block.strip(), new_block.strip())
+              open(path, "w").write(code)
+              print("Successfully patched build_bootstrap_cmds in dxb/build.sh")
+          else:
+              print("Warning: mig.xcodeproj block not found exactly")
+          '
+          
+          # Pre-create all files that dxb/build.sh runs sed on
           mkdir -p dxb/xnu/bsd/sys dxb/xnu/libsyscall dxb/xnu/makedefs dxb/bootstrap_cmds/xcodescripts dxb/Libsystem
           touch dxb/xnu/bsd/sys/make_symbol_aliasing.sh
           touch dxb/xnu/libsyscall/Libsyscall.xcconfig
