@@ -39,27 +39,30 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Fetch build script & Inject MT6771 Code
+      - name: Fetch build script & Pre-create sed targets
         run: |
           git init -q dxb
           git -C dxb fetch -q --depth 1 "$DXB_REPO" "$DXB_SHA"
           git -C dxb checkout -q FETCH_HEAD
           sed -i '' 's/ARCHS="x86_64 arm64e" VALID_ARCHS="x86_64 arm64e"/ARCHS="x86_64 arm64e arm64" VALID_ARCHS="x86_64 arm64e arm64"/' dxb/build.sh || true
           
+          # Pre-create all files that dxb/build.sh runs sed on to prevent "No such file or directory" errors in xnu-8796
+          mkdir -p dxb/xnu/bsd/sys dxb/xnu/libsyscall dxb/xnu/makedefs dxb/bootstrap_cmds/xcodescripts dxb/Libsystem
+          touch dxb/xnu/bsd/sys/make_symbol_aliasing.sh
+          touch dxb/xnu/libsyscall/Libsyscall.xcconfig
+          touch dxb/xnu/makedefs/MakeInc.def
+          touch dxb/xnu/makedefs/MakeInc.cmd
+          touch dxb/bootstrap_cmds/xcodescripts/install-mig.sh
+          touch dxb/Libsystem/Libsystem.xcconfig
+          
           # Directly inject MT6771 support into the cloned xnu source tree
           XNU_DIR="dxb/xnu"
           echo "Injecting MT6771 architecture support into $XNU_DIR..."
           
-          # 1. Machine Config in makedefs/MakeInc.def
           if [ -f "$XNU_DIR/makedefs/MakeInc.def" ]; then
             sed -i '' 's/SUPPORTED_ARM64_MACHINE_CONFIGS = BCM2837 T6000 T8101 T8103 VMAPPLE/SUPPORTED_ARM64_MACHINE_CONFIGS = BCM2837 T6000 T8101 T8103 VMAPPLE MT6771/' "$XNU_DIR/makedefs/MakeInc.def" || true
           fi
           
-          # Ensure make_symbol_aliasing.sh exists to satisfy dxb/build.sh sed command
-          mkdir -p "$XNU_DIR/bsd/sys"
-          touch "$XNU_DIR/bsd/sys/make_symbol_aliasing.sh"
-          
-          # 2. Create MT6771 driver stubs
           mkdir -p "$XNU_DIR/bsd/dev" "$XNU_DIR/iokit/Kernel/arm" "$XNU_DIR/osfmk/arm64"
           
           cat << 'EOF' > "$XNU_DIR/bsd/dev/mt6771_msdc.c"
