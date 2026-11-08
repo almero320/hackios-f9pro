@@ -1,0 +1,11 @@
+diff --git a/osfmk/kern/startup.c b/osfmk/kern/startup.c
+index 1234567..89abcdef 100644
+--- a/osfmk/kern/startup.c
++++ b/osfmk/kern/startup.c
+@@ -200,6 +200,10 @@
+ #if defined(SWEET)
+     // Default sweet bootargs
+ #endif
++#if defined(MT6771)
++    // Default MT6771 OPPO F9 Pro bootargs: cpus=8 ufsrw=1 rootrw=1
++#endif

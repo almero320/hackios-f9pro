@@ -1,0 +1,18 @@
+kernel_size: 114688
+kernel_addr: 0x8000
+ramdisk_size: 7244
+ramdisk_addr: 0x1000000
+second_size: 0
+tags_addr: 0x100
+page_size: 4096
+header_version: 2
+os_version: 0x22000236
+name: 
+cmdline: console=null
+header_size: 1660
+dtb_addr: 0x1f00000
+kernel_offset: 4096
+ramdisk_offset: 118784
+second_offset: 126976
+recovery_dtbo_offset: 126976
+dtb_offset: 126976

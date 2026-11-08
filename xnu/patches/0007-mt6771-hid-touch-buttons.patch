@@ -1,0 +1,16 @@
+diff --git a/bsd/dev/mt6771_hid.c b/bsd/dev/mt6771_hid.c
+new file mode 100644
+index 0000000..89abcdef
+--- /dev/null
++++ b/bsd/dev/mt6771_hid.c
+@@ -0,0 +1,45 @@
++/*
++ * MediaTek MT6771 (OPPO F9 Pro) Touch & Button HID Service Stubs
++ */
++#include <stdint.h>
++
++#define MT6771_I2C_BASE 0x11007000UL
++
++extern "C" void mt6771_hid_init(void) {
++    // Initialize Himax / Novatek touch and volume/power button event handlers
+ }

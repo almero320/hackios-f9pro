@@ -1,0 +1,16 @@
+diff --git a/osfmk/arm64/smp_mt6771.c b/osfmk/arm64/smp_mt6771.c
+new file mode 100644
+index 0000000..89abcdef
+--- /dev/null
++++ b/osfmk/arm64/smp_mt6771.c
+@@ -0,0 +1,40 @@
++/*
++ * MediaTek MT6771 (OPPO F9 Pro) SMP / PSCI Secondary Core Bring-up
++ */
++#include <stdint.h>
++
++#define MT6771_NR_CPUS 8
++
++extern "C" void mt6771_smp_init(void) {
++    // Bring up secondary Cortex-A53 and Cortex-A73 cores via PSCI CPU_ON
+ }

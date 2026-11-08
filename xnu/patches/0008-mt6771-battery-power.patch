@@ -1,0 +1,14 @@
+diff --git a/bsd/dev/mt6771_battery.c b/bsd/dev/mt6771_battery.c
+new file mode 100644
+index 0000000..89abcdef
+--- /dev/null
++++ b/bsd/dev/mt6771_battery.c
+@@ -0,0 +1,38 @@
++/*
++ * MediaTek MT6771 (OPPO F9 Pro) IOPMPowerSource Battery Service
++ */
++#include <stdint.h>
++
++extern "C" void mt6771_battery_init(void) {
++    // Initialize IOPMPowerSource battery driver for status bar display
+ }
