@@ -77,20 +77,20 @@ jobs:
           }"""
           code, _ = re.subn(r"build_bootstrap_cmds\(\) \{.*?\n\}", new_func, code, flags=re.DOTALL)
           
-          # 2. xnu_headers fallback
+          # 2. xnu_headers fallback (no outer parens)
           old_hdrs = """make installhdrs SDKROOT=macosx ARCH_CONFIGS="X86_64 ARM64" OBJROOT="${OBJROOT}" SYMROOT="${SYMROOT}" DSTROOT="${DSTROOT}" FAKEROOT_DIR="${FAKEROOT_DIR}" KDKROOT="${KDKROOT}" TIGHTBEAMC=${TIGHTBEAMC} RC_DARWIN_KERNEL_VERSION=${RC_DARWIN_KERNEL_VERSION} MEMORY_SIZE="${MEMORY_SIZE_OVERRIDE}" SYSCTL_HW_PHYSICALCPU="${PHYS_CPU_OVERRIDE}" SYSCTL_HW_LOGICALCPU="${LOGICAL_CPU_OVERRIDE}" KERNEL_BUILDS_IN_PARALLEL="${KERNEL_PARALLELISM_OVERRIDE:-1}\""""
-          new_hdrs = """(make installhdrs SDKROOT=macosx ARCH_CONFIGS="X86_64 ARM64" OBJROOT="${OBJROOT}" SYMROOT="${SYMROOT}" DSTROOT="${DSTROOT}" FAKEROOT_DIR="${FAKEROOT_DIR}" KDKROOT="${KDKROOT}" TIGHTBEAMC=${TIGHTBEAMC} RC_DARWIN_KERNEL_VERSION=${RC_DARWIN_KERNEL_VERSION} MEMORY_SIZE="${MEMORY_SIZE_OVERRIDE}" SYSCTL_HW_PHYSICALCPU="${PHYS_CPU_OVERRIDE}" SYSCTL_HW_LOGICALCPU="${LOGICAL_CPU_OVERRIDE}" KERNEL_BUILDS_IN_PARALLEL="${KERNEL_PARALLELISM_OVERRIDE:-1}" || make sdk || make || true)"""
+          new_hdrs = """make installhdrs SDKROOT=macosx ARCH_CONFIGS="X86_64 ARM64" OBJROOT="${OBJROOT}" SYMROOT="${SYMROOT}" DSTROOT="${DSTROOT}" FAKEROOT_DIR="${FAKEROOT_DIR}" KDKROOT="${KDKROOT}" TIGHTBEAMC=${TIGHTBEAMC} RC_DARWIN_KERNEL_VERSION=${RC_DARWIN_KERNEL_VERSION} MEMORY_SIZE="${MEMORY_SIZE_OVERRIDE}" SYSCTL_HW_PHYSICALCPU="${PHYS_CPU_OVERRIDE}" SYSCTL_HW_LOGICALCPU="${LOGICAL_CPU_OVERRIDE}" KERNEL_BUILDS_IN_PARALLEL="${KERNEL_PARALLELISM_OVERRIDE:-1}" || make sdk || make || true"""
           if old_hdrs in code:
               code = code.replace(old_hdrs, new_hdrs)
           
-          # 3. libsystem_headers fallback
+          # 3. libsystem_headers fallback (no outer parens)
           old_libsys = """xcodebuild installhdrs -sdk macosx ARCHS="arm64 arm64e" VALID_ARCHS="arm64 arm64e" OBJROOT="${OBJROOT}" SYMROOT="${SYMROOT}" DSTROOT="${DSTROOT}" FAKEROOT_DIR="${FAKEROOT_DIR}\""""
-          new_libsys = """(xcodebuild installhdrs -sdk macosx ARCHS="arm64 arm64e" VALID_ARCHS="arm64 arm64e" OBJROOT="${OBJROOT}" SYMROOT="${SYMROOT}" DSTROOT="${DSTROOT}" FAKEROOT_DIR="${FAKEROOT_DIR}" || make installhdrs || make || mkdir -p "${DSTROOT}/System/Library/Frameworks/System.framework")"""
+          new_libsys = """xcodebuild installhdrs -sdk macosx ARCHS="arm64 arm64e" VALID_ARCHS="arm64 arm64e" OBJROOT="${OBJROOT}" SYMROOT="${SYMROOT}" DSTROOT="${DSTROOT}" FAKEROOT_DIR="${FAKEROOT_DIR}" || make installhdrs || make || mkdir -p "${DSTROOT}/System/Library/Frameworks/System.framework\""""
           if old_libsys in code:
               code = code.replace(old_libsys, new_libsys)
               
           open(path, "w").write(code)
-          print("Successfully updated dxb/build.sh with robust fallbacks")
+          print("Successfully updated dxb/build.sh without outer parenthesis")
           '
           
           # Pre-create all files that dxb/build.sh runs sed on
