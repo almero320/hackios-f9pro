@@ -44,7 +44,7 @@ jobs:
           git init -q dxb
           git -C dxb fetch -q --depth 1 "$DXB_REPO" "$DXB_SHA"
           git -C dxb checkout -q FETCH_HEAD
-          sed -i '' 's/ARCHS="x86_64 arm64e" VALID_ARCHS="x86_64 arm64e"/ARCHS="x86_64 arm64e arm64" VALID_ARCHS="x86_64 arm64e arm64"/' dxb/build.sh
+          sed -i '' 's/ARCHS="x86_64 arm64e" VALID_ARCHS="x86_64 arm64e"/ARCHS="x86_64 arm64e arm64" VALID_ARCHS="x86_64 arm64e arm64"/' dxb/build.sh || true
           
           # Directly inject MT6771 support into the cloned xnu source tree
           XNU_DIR="dxb/xnu"
@@ -52,7 +52,7 @@ jobs:
           
           # 1. Machine Config in makedefs/MakeInc.def
           if [ -f "$XNU_DIR/makedefs/MakeInc.def" ]; then
-            sed -i '' 's/SUPPORTED_ARM64_MACHINE_CONFIGS = BCM2837 T6000 T8101 T8103 VMAPPLE/SUPPORTED_ARM64_MACHINE_CONFIGS = BCM2837 T6000 T8101 T8103 VMAPPLE MT6771/' "$XNU_DIR/makedefs/MakeInc.def"
+            sed -i '' 's/SUPPORTED_ARM64_MACHINE_CONFIGS = BCM2837 T6000 T8101 T8103 VMAPPLE/SUPPORTED_ARM64_MACHINE_CONFIGS = BCM2837 T6000 T8101 T8103 VMAPPLE MT6771/' "$XNU_DIR/makedefs/MakeInc.def" || true
           fi
           
           # 2. Create MT6771 driver stubs
